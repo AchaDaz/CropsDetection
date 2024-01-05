@@ -23,7 +23,11 @@ def get_model(tl: int):
     if tl == 0:
         return models.resnet34(pretrained=False)
     else:
-        return torch.load('results/experiment2/nn_pretrained/nn27')
+        model = torch.load('results/experiment2/nn_pretrained/nn27')
+        for param in model.parameters():
+            param.requires_grad = False
+            
+        return model
 
 def train_test_split():
     '''
