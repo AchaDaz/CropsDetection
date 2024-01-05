@@ -21,13 +21,13 @@ def get_dataloader(device, rootDir, transforms, batchSize, shuffle=True):
 
 def get_model(tl: int):
     if tl == 0:
-        return models.resnet34(pretrained=False)
+        model = models.resnet34(pretrained=False)
     else:
         model = torch.load('results/experiment2/nn_pretrained/nn27')
         for param in model.parameters():
             param.requires_grad = False
-            
-        return model
+
+    return model
 
 def train_test_split():
     '''

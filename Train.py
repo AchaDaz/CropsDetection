@@ -67,7 +67,7 @@ def main():
     model.fc = nn.Linear(numFeatures, len(trainDS.classes))
     model = model.to(DEVICE)
 
-    
+
 
 
 
