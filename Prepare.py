@@ -4,19 +4,26 @@ import shutil
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
-from torchvision import datasets, models
+from torchvision import datasets, models, transforms
+import matplotlib.pyplot as plt
+from PIL import Image
+from torch.nn.functional import softmax
+from PIL import Image, ImageDraw
 
-
-def get_dataloader(device, rootDir, transforms, batchSize, shuffle=True):
+def get_dataloader(device, rootDir, transforms, batchSize, rank, world_size):
     '''
         Функция для создания дата лоадера из директорий с изображениями
     '''
     ds = datasets.ImageFolder(root=rootDir,
-        transform=transforms)
-    loader = DataLoader(ds, batch_size=batchSize,
-        shuffle=shuffle,
-        num_workers=os.cpu_count(),
-        pin_memory=True if device == "cuda" else False)
+                              transform=transforms)
+    train_sampler = torch.utils.data.distributed.DistributedSampler(ds,
+                                                                    num_replicas=world_size,
+                                                                    rank=rank)
+    loader = DataLoader(ds, 
+                        batch_size=batchSize,
+                        num_workers=os.cpu_count(),
+                        pin_memory=True if device == "cuda" else False,
+                        sampler=train_sampler)
     return (ds, loader)
 
 def get_model(tl: int):
@@ -93,3 +100,109 @@ def train_test_split():
             shutil.copy(name, root_dir + '/test//' + cls)
 
     print("########### Train Test Val Script Ended ###########")
+
+def base_check(model):
+    device = 'cpu'
+    transform = transforms.Compose([transforms.Resize((224, 224)),
+                                transforms.ToTensor(), 
+                                transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                     std=[0.229, 0.224, 0.225])])
+
+    train_dataset = datasets.ImageFolder('crops/train', transform=transform)
+    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+
+    classes = train_dataset.classes
+
+    # Визуализация предсказаний
+    sample_image = Image.open('./crops_greyscale/test/cabbage/Screenshot_1.jpg')
+    sample_image_tensor = transform(sample_image).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        model.eval()
+        output = model(sample_image_tensor)
+        _, predicted_index = torch.max(output.data, 1)
+        prob = torch.nn.functional.softmax(output, dim=1)
+    
+    if prob.max().item() > 0.7:
+        predicted_class = classes[predicted_index.item()]
+    else:
+        predicted_class = 'None'
+
+    plt.imshow(sample_image)
+    plt.axis('off')
+    plt.title(f'Predicted Class: {predicted_class}')
+    plt.show()
+
+def crop_predict_image(path_image: str, model):
+    '''
+    Функция принимает на вход путь к изображению, разрезает его,
+    каждый фрагмент отправляет в модель.
+    Выходное значение - список тензоров с вероятноястями.
+    '''
+        
+    device = torch.device("cpu")
+        
+    image = Image.open(path_image)
+    width, height = image.size
+    
+    transform = transforms.Compose([transforms.Resize((224, 224)),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                         std=[0.229, 0.224, 0.225])])
+    
+    train_dataset = datasets.ImageFolder('crops/train', transform=transform)
+    classes = train_dataset.classes
+    
+    # Список из списков с тензорами вероятностей классов
+    predicted_output = [[] for lst in range(0, 10)]
+    
+    # Настройки для отрисовывания
+    colors = ['red', 'blue', 'yellow', 'green', 'orange', 'brown', 'white', 'black']
+    
+    classes_colors = dict(zip(range(0, 100), zip(classes, colors)))
+    
+    draw = ImageDraw.Draw(image)
+    
+    upper = 0
+    lower = round(height * 0.1)
+    
+    row = -1
+    
+    for h in range(0, 10):
+        row += 1
+        left = 0
+        right = round(width * 0.1)
+        
+        for w in range(0, 10):
+            cropped_image = image.crop((left, upper, right, lower))
+            transfromed_image = transform(cropped_image).unsqueeze(0).to(device)
+            
+            predicted = softmax(model(transfromed_image), -1)
+            
+            predicted_output[row].append(predicted)
+            
+            if float(torch.max(predicted)) > 0.9:
+                index = int(torch.argmax(predicted))
+                
+                draw.line((left, upper, right, upper), fill=classes_colors[index][1], width=10)
+                draw.line((right, upper, right, lower), fill=classes_colors[index][1], width=10)
+                draw.line((left, lower, right, lower), fill=classes_colors[index][1], width=10)
+                draw.line((left, lower, left, upper), fill=classes_colors[index][1], width=10)
+            
+            left += round(width * 0.1)
+            right += round(width * 0.1)
+            
+        upper += round(height * 0.1)
+        lower += round(height * 0.1)
+    
+    text = ''
+    for i in classes_colors:
+        text = text + classes_colors[i][0] + ' - ' + classes_colors[i][1] + ' \n'
+    
+    plt.figure(figsize=(16, 12))
+    plt.imshow(image)
+    plt.axis('off')
+    plt.title(text)
+    plt.show()
+    
+    return image, predicted_output, classes
