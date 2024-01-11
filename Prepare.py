@@ -16,15 +16,15 @@ def get_dataloader(device, rootDir, transforms, batchSize, rank, world_size):
     '''
     ds = datasets.ImageFolder(root=rootDir,
                               transform=transforms)
-    train_sampler = torch.utils.data.distributed.DistributedSampler(ds,
-                                                                    num_replicas=world_size,
-                                                                    rank=rank)
+    sampler = torch.utils.data.distributed.DistributedSampler(ds,
+                                                              num_replicas=world_size,
+                                                              rank=rank)
     loader = DataLoader(ds, 
                         batch_size=batchSize,
                         num_workers=os.cpu_count(),
                         pin_memory=True if device == "cuda" else False,
-                        sampler=train_sampler)
-    return (ds, loader)
+                        sampler=sampler)
+    return (ds, loader, sampler)
 
 def get_model(tl: int):
     if tl == 0:

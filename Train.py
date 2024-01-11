@@ -18,7 +18,7 @@ TRAIN = os.path.join(BASE_PATH, "train")
 VAL = os.path.join(BASE_PATH, "test")
 
 # Число изображений в батче
-FEATURE_EXTRACTION_BATCH_SIZE = 8
+FEATURE_EXTRACTION_BATCH_SIZE = 5
 LR = 0.005
 
 MEAN = [0.485, 0.456, 0.406]
@@ -27,6 +27,7 @@ IMAGE_SIZE = 200
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 def train(gpu, args):
+    torch.cuda.set_per_process_memory_fraction(0.15, device=0)
     # Аугментация изображений
     trainTransform = transforms.Compose([
         transforms.RandomResizedCrop(IMAGE_SIZE),
@@ -45,14 +46,14 @@ def train(gpu, args):
     dist.init_process_group(backend='gloo', init_method='env://', world_size=args.world_size, rank=rank)
     torch.manual_seed(0)
 
-    (trainDS, trainLoader) = get_dataloader(DEVICE,
+    (trainDS, trainLoader, trainSampler) = get_dataloader(DEVICE,
                                             TRAIN,
                                             transforms=trainTransform,
                                             batchSize=FEATURE_EXTRACTION_BATCH_SIZE,
                                             rank=rank,
                                             world_size=args.world_size)
     
-    (valDS, valLoader) = get_dataloader(DEVICE,
+    (valDS, valLoader, valSampler) = get_dataloader(DEVICE,
                                         VAL,
                                         transforms=valTransform,
                                         batchSize=FEATURE_EXTRACTION_BATCH_SIZE,
@@ -83,6 +84,8 @@ def train(gpu, args):
     for e in tqdm(range(args.epochs)):
         # set the model in training macode
         model.train()
+        trainSampler.set_epoch(e)
+        valSampler.set_epoch(e)
         # initialize the total training and validation loss
         totalTrainLoss = 0
         totalValLoss = 0
