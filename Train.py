@@ -18,7 +18,7 @@ TRAIN = os.path.join(BASE_PATH, "train")
 VAL = os.path.join(BASE_PATH, "test")
 
 # Число изображений в батче
-FEATURE_EXTRACTION_BATCH_SIZE = 5
+FEATURE_EXTRACTION_BATCH_SIZE = 8
 LR = 0.005
 
 MEAN = [0.485, 0.456, 0.406]
@@ -27,7 +27,7 @@ IMAGE_SIZE = 200
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 def train(gpu, args):
-    torch.cuda.set_per_process_memory_fraction(0.15, device=0)
+    torch.cuda.set_per_process_memory_fraction(0.2, device=0)
     # Аугментация изображений
     trainTransform = transforms.Compose([
         transforms.RandomResizedCrop(IMAGE_SIZE),
