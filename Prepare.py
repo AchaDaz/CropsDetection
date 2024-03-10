@@ -4,11 +4,21 @@ import shutil
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
+import torch.distributed as dist
 from torchvision import datasets, models, transforms
 import matplotlib.pyplot as plt
 from PIL import Image
 from torch.nn.functional import softmax
 from PIL import Image, ImageDraw
+
+def setup(rank: int, world_size: int):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12345'
+
+    dist.init_process_group('gloo', rank=rank, world_size=world_size)
+
+def cleanup():
+    dist.destroy_process_group()
 
 def get_dataloader(device, rootDir, transforms, batchSize, rank, world_size):
     '''

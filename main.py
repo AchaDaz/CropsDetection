@@ -1,7 +1,7 @@
-import os
 import argparse
 import torch.multiprocessing as mp
 
+from prepare import setup, cleanup
 from train import train
 
 def main():
@@ -19,10 +19,13 @@ def main():
     args = parser.parse_args()
     
     args.world_size = args.gpus * args.nodes
-    os.environ['MASTER_ADDR'] = '127.0.0.1'
-    os.environ['MASTER_PORT'] = '4444'
 
-    mp.spawn(train, nprocs=args.gpus, args=(args,))
+    setup(args=(args,))
+    mp.spawn(train,
+             nprocs=args.world_size, 
+             args=(args,), 
+             join=True)
 
+    cleanup()
 if __name__ == '__main__':
     main()
