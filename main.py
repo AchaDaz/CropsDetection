@@ -20,7 +20,7 @@ def main():
     
     args.world_size = args.gpus * args.nodes
 
-    setup(args=(args,))
+    setup(args.nr, args.world_size)
     mp.spawn(train,
              nprocs=args.world_size, 
              args=(args,), 
