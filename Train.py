@@ -26,7 +26,7 @@ STD = [0.229, 0.224, 0.225]
 IMAGE_SIZE = 200
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-def train(tl, epochs, local_rank):
+def train(tl, epochs, local_rank, save):
     torch.cuda.set_per_process_memory_fraction(0.2, device=0)
     # Аугментация изображений
     trainTransform = transforms.Compose([
@@ -152,9 +152,9 @@ def train(tl, epochs, local_rank):
     save_dir = f'results/experiment2/{date.date()}'
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
-    if local_rank == 0 and tl == 1:
+    if save == 1 and tl == 1:
         torch.save(model, f'{save_dir}/tl_{date.time().strftime("%H.%M.%S")}.pt')
-    if local_rank == 0 and tl == 0:
+    if save == 1 and tl == 0:
         torch.save(model, f'{save_dir}/pre_{date.time().strftime("%H.%M.%S")}.pt')
     
     return model, H

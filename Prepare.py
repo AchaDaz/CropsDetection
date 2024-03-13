@@ -13,9 +13,6 @@ from torch.nn.functional import softmax
 from PIL import Image, ImageDraw
 
 def setup():
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12345'
-
     dist.init_process_group('gloo')
 
 def set_random_seeds(random_seed=0):
@@ -44,7 +41,6 @@ def evaluate(model, device, test_loader):
 
     return accuracy
 
-
 def cleanup():
     dist.destroy_process_group()
 
@@ -64,7 +60,7 @@ def get_dataloader(device, rootDir, transforms, batchSize):
 
 def get_model(tl: int):
     if tl == 0:
-        model = models.resnet34(pretrained=False)
+        model = models.resnet34(weights=None)
     else:
         model = torch.load('results/experiment2/nn_pretrained/nn27')
         for param in model.parameters():
