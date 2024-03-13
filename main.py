@@ -1,7 +1,6 @@
 import argparse
-import torch.multiprocessing as mp
 
-from prepare import setup, cleanup
+from prepare import set_random_seeds, setup
 from train import train
 
 def main():
@@ -20,12 +19,9 @@ def main():
     
     args.world_size = args.gpus * args.nodes
 
-    setup(args.nr, args.world_size)
-    mp.spawn(train,
-             nprocs=args.world_size, 
-             args=(args,), 
-             join=True)
+    setup()
+    set_random_seeds(random_seed=0)
+    train()
 
-    cleanup()
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

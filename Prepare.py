@@ -1,4 +1,5 @@
 import os
+import random
 import numpy as np
 import shutil
 import pandas as pd
@@ -11,11 +12,38 @@ from PIL import Image
 from torch.nn.functional import softmax
 from PIL import Image, ImageDraw
 
-def setup(rank: int, world_size: int):
+def setup():
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12345'
 
-    dist.init_process_group('gloo', rank=rank, world_size=world_size)
+    dist.init_process_group('gloo')
+
+def set_random_seeds(random_seed=0):
+
+    torch.manual_seed(random_seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(random_seed)
+    random.seed(random_seed)
+
+def evaluate(model, device, test_loader):
+
+    model.eval()
+
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in test_loader:
+            images, labels = data[0].to(device), data[1].to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    accuracy = correct / total
+
+    return accuracy
+
 
 def cleanup():
     dist.destroy_process_group()
