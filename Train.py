@@ -26,7 +26,7 @@ STD = [0.229, 0.224, 0.225]
 IMAGE_SIZE = 200
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-def train(gpu, args):
+def train():
     torch.cuda.set_per_process_memory_fraction(0.2, device=0)
     # Аугментация изображений
     trainTransform = transforms.Compose([
