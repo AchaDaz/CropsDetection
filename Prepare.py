@@ -48,15 +48,13 @@ def evaluate(model, device, test_loader):
 def cleanup():
     dist.destroy_process_group()
 
-def get_dataloader(device, rootDir, transforms, batchSize, rank, world_size):
+def get_dataloader(device, rootDir, transforms, batchSize):
     '''
         Функция для создания дата лоадера из директорий с изображениями
     '''
     ds = datasets.ImageFolder(root=rootDir,
                               transform=transforms)
-    sampler = torch.utils.data.distributed.DistributedSampler(ds,
-                                                              num_replicas=world_size,
-                                                              rank=rank)
+    sampler = torch.utils.data.distributed.DistributedSampler(ds)
     loader = DataLoader(ds, 
                         batch_size=batchSize,
                         num_workers=os.cpu_count(),

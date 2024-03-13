@@ -50,15 +50,13 @@ def train(gpu, args):
                                             TRAIN,
                                             transforms=trainTransform,
                                             batchSize=FEATURE_EXTRACTION_BATCH_SIZE,
-                                            rank=rank,
-                                            world_size=args.world_size)
+                                            )
     
     (valDS, valLoader, valSampler) = get_dataloader(DEVICE,
                                         VAL,
                                         transforms=valTransform,
                                         batchSize=FEATURE_EXTRACTION_BATCH_SIZE,
-                                        rank=rank,
-                                        world_size=args.world_size)
+                                        )
 
     model = get_model(args.tl)
     numFeatures = model.fc.in_features
