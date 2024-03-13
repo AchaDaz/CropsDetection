@@ -11,8 +11,6 @@ def main():
                         help='flag pre training/transfer learning')
     args = parser.parse_args()
     
-    args.world_size = args.gpus * args.nodes
-
     setup()
     set_random_seeds(random_seed=0)
     train()
