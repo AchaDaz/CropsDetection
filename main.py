@@ -1,6 +1,6 @@
 import argparse
 
-from prepare import set_random_seeds, setup
+from prepare import set_random_seeds, setup, cleanup
 from train import train
 
 def main():
@@ -18,6 +18,8 @@ def main():
     setup()
     set_random_seeds(random_seed=0)
     train(args.tl, args.epochs, args.local_rank, args.save)
+
+    cleanup()
 
 if __name__ == "__main__":
     main()
