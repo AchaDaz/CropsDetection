@@ -26,7 +26,7 @@ STD = [0.229, 0.224, 0.225]
 IMAGE_SIZE = 200
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-def train():
+def train(tl, epochs, local_rank):
     torch.cuda.set_per_process_memory_fraction(0.2, device=0)
     # Аугментация изображений
     trainTransform = transforms.Compose([
@@ -42,7 +42,7 @@ def train():
         transforms.Normalize(mean=MEAN, std=STD)
     ])
 
-    rank = args.nr * args.gpus + gpu
+    #rank = args.nr * args.gpus + gpu
     #dist.init_process_group(backend='gloo', init_method='env://', world_size=args.world_size, rank=rank)
     torch.manual_seed(0)
 
@@ -58,13 +58,13 @@ def train():
                                         batchSize=FEATURE_EXTRACTION_BATCH_SIZE,
                                         )
 
-    model = get_model(args.tl)
+    model = get_model(tl)
     numFeatures = model.fc.in_features
 
     model.fc = nn.Linear(numFeatures, len(trainDS.classes))
     model = model.to(DEVICE)
 
-    model = nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
+    model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank)
 
     lossFunc = nn.CrossEntropyLoss()
     opt = torch.optim.SGD(model.parameters(), lr=LR)
@@ -79,7 +79,7 @@ def train():
         "val_acc": []}
 
     startTime = time.time()
-    for e in tqdm(range(args.epochs)):
+    for e in tqdm(range(epochs)):
         # set the model in training macode
         model.train()
         trainSampler.set_epoch(e)
@@ -138,7 +138,7 @@ def train():
         H["val_loss"].append(avgValLoss.cpu().detach().numpy())
         H["val_acc"].append(valCorrect)
         # print the model training and validation information
-        print("[INFO] EPOCH: {}/{}".format(e + 1, args.epochs))
+        print("[INFO] EPOCH: {}/{}".format(e + 1, epochs))
         print("Train loss: {:.6f}, Train accuracy: {:.4f}".format(
             avgTrainLoss, trainCorrect))
         print("Val loss: {:.6f}, Val accuracy: {:.4f}".format(
@@ -152,9 +152,9 @@ def train():
     save_dir = f'results/experiment2/{date.date()}'
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
-    if args.nr == 0 and args.tl == 1:
+    if local_rank == 0 and tl == 1:
         torch.save(model, f'{save_dir}/tl_{date.time().strftime("%H.%M.%S")}.pt')
-    if args.nr == 0 and args.tl == 0:
+    if local_rank == 0 and tl == 0:
         torch.save(model, f'{save_dir}/pre_{date.time().strftime("%H.%M.%S")}.pt')
     
     return model, H

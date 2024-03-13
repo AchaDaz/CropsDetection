@@ -9,11 +9,13 @@ def main():
                         help='number of total epochs to run')
     parser.add_argument('-tl', default=1, type=int, metavar='N',
                         help='flag pre training/transfer learning')
+    parser.add_argument('-local_rank', type=int, metavar='N',
+                        help='flag master node for saving result')
     args = parser.parse_args()
     
     setup()
     set_random_seeds(random_seed=0)
-    train()
+    train(args.tl, args.epochs, args.local_rank)
 
 if __name__ == "__main__":
     main()
