@@ -27,7 +27,9 @@ IMAGE_SIZE = 200
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 def train(tl, epochs, local_rank, save):
-    torch.cuda.set_per_process_memory_fraction(0.2, device=0)
+    if DEVICE == "cuda":
+        torch.cuda.set_per_process_memory_fraction(0.2, device=0)
+
     # Аугментация изображений
     trainTransform = transforms.Compose([
         transforms.RandomResizedCrop(IMAGE_SIZE),
@@ -64,7 +66,10 @@ def train(tl, epochs, local_rank, save):
     model.fc = nn.Linear(numFeatures, len(trainDS.classes))
     model = model.to(DEVICE)
 
-    model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank)
+    if DEVICE == "cuda":
+        model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank)
+    else:
+        model = nn.parallel.DistributedDataParallel(model)
 
     lossFunc = nn.CrossEntropyLoss()
     opt = torch.optim.SGD(model.parameters(), lr=LR)
