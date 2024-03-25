@@ -113,8 +113,7 @@ def train(tl, epochs, local_rank, save):
             # add the loss to the total training loss so far and
             # calculate the number of correct predictions
             totalTrainLoss += loss
-            trainCorrect += (pred.argmax(1) == y).type(
-                torch.float).sum().item()
+            trainCorrect += (pred.argmax(1) == y).type(torch.float).sum().item()
             
             
         # switch off autograd
