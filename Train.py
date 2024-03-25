@@ -8,6 +8,7 @@ import torch.distributed as dist
 from datetime import datetime
 import time
 from tqdm import tqdm
+import json
 
 from prepare import get_dataloader, get_model
 
@@ -26,7 +27,7 @@ STD = [0.229, 0.224, 0.225]
 IMAGE_SIZE = 200
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-def train(tl, epochs, local_rank, save):
+def train(tl, epochs, local_rank, save, save_epoch_result):
     if DEVICE == "cuda":
         torch.cuda.set_per_process_memory_fraction(0.2, device=0)
 
@@ -157,8 +158,18 @@ def train(tl, epochs, local_rank, save):
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
     if save == 1 and tl == 1:
-        torch.save(model, f'{save_dir}/tl_{date.time().strftime("%H.%M.%S")}.pt')
+        torch.save(model, f'{save_dir}/tl_{date.time().strftime("%H.%M")}.pt')
     if save == 1 and tl == 0:
-        torch.save(model, f'{save_dir}/pre_{date.time().strftime("%H.%M.%S")}.pt')
+        torch.save(model, f'{save_dir}/pre_{date.time().strftime("%H.%M")}.pt')
+
+    if save_epoch_result == 1:
+        for i in H:
+            for j in range(len(H[i])):
+                H[i][j] = float(H[i][j])
+
+        file_path = f'{save_dir}/graphics/{date.time().strftime("%H.%M")}.json'
+
+        with open(file_path, "w") as fp:
+            json.dump(H , fp)
     
     return model, H
