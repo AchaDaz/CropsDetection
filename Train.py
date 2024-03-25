@@ -166,10 +166,13 @@ def train(tl, epochs, local_rank, save, save_epoch_result):
         for i in H:
             for j in range(len(H[i])):
                 H[i][j] = float(H[i][j])
+        
+        graphics_dir_path = f'{save_dir}/graphics'
 
-        file_path = f'{save_dir}/graphics/{date.time().strftime("%H.%M")}.json'
+        if not os.path.isdir(graphics_dir_path):
+            os.mkdir(graphics_dir_path)
 
-        with open(file_path, "w") as fp:
+        with open(graphics_dir_path + f'/{date.time().strftime("%H_%M")}.json', "w") as fp:
             json.dump(H , fp)
     
     return model, H
