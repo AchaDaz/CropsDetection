@@ -53,7 +53,6 @@ def get_dataloader(device, rootDir, transforms, batchSize):
     sampler = torch.utils.data.distributed.DistributedSampler(ds)
     loader = DataLoader(ds, 
                         batch_size=batchSize,
-                        num_workers=os.cpu_count(),
                         pin_memory=True if device == "cuda" else False,
                         sampler=sampler)
     return (ds, loader, sampler)
