@@ -14,23 +14,31 @@ from prepare import get_dataloader, get_model
 
 # Задание путей к изображениям для обучения
 BASE_PATH = "crops_greyscale"
+#BASE_PATH = "dataset"
 
 TRAIN = os.path.join(BASE_PATH, "train")
 VAL = os.path.join(BASE_PATH, "test")
 
 # Число изображений в батче
-FEATURE_EXTRACTION_BATCH_SIZE = 8
 LR = 0.005
 
-MEAN = [0.485, 0.456, 0.406]
-STD = [0.229, 0.224, 0.225]
+MEAN = [0.45]
+STD = [0.225]
+#MEAN = [0.485, 0.456, 0.406]
+#STD = [0.229, 0.224, 0.225]
 IMAGE_SIZE = 200
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 def train(tl, epochs, local_rank, save, save_epoch_result):
-    if DEVICE == "cuda":
-        torch.cuda.set_per_process_memory_fraction(0.2, device=0)
+    #if DEVICE == "cuda":
+    #    torch.cuda.set_per_process_memory_fraction(0.8, device=0)
 
+    if tl == 0:
+        FEATURE_EXTRACTION_BATCH_SIZE = 30
+    
+    else:
+        FEATURE_EXTRACTION_BATCH_SIZE = 8
+    
     # Аугментация изображений
     trainTransform = transforms.Compose([
         transforms.RandomResizedCrop(IMAGE_SIZE),
